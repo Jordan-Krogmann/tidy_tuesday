@@ -3,13 +3,41 @@
 
 Tidy Tuesday has been going on in the R community for a couple of years
 now, put on by R for Data Science (here:
-[:link:](https://github.com/rfordatascience/tidytuesday/). This is
+[:link:](https://github.com/rfordatascience/tidytuesday/)). This is
 primarily pitched towards R, but the ultimate goal is to start thinking
 about what is `Tidy` Data and how does it helps us as Data Analysts,
 Business Analysts, & Data Scientists interpret data & deliver meaningful
 analysis. Apart from my own reasons for doing this, I want this to be a
 fun collaborative experience within the Analytics Department & SNHU as a
 whole(key word is fun\!).
+
+## What is Tidy Data
+
+You could look at a majority of our data sources and find very un-tidy
+data. A few good examples of this are the student satisfaction
+surveys(question columns that will forever expand to the right) or even
+the dreaded `msr_data_final` table(where to begin). The general idea
+behind tidied-data is to have each column represent a unique variable,
+each row represent an unique observation & each cell representing a
+unique value.
+
+**Example 1**: General concept of tidy data.
+
+![tidy-data](imgs/tidy-data.png)
+
+**Example 2**: In the example below we are creating a variable `year`
+out of the columns `1999` & `2000`.
+
+``` r
+who_cases_tidy <- who_cases %>% 
+  pivot_longer(
+     cols = c("1999" , "2000")
+     names_to = "year",
+     values_to = "cases"
+  )
+```
+
+![tidy-data](imgs/pivot-longer.png)
 
 ## Format
 
@@ -18,15 +46,16 @@ want it to be an open forum where we ask questions and **learn by
 doing**. The important part of this is we are able to walk through
 analysis methodically.
 
-  - Logistics:
+  - **Logistics**:
       - Room: Monomoy
       - When: Every Other Tuesday (Starting the 11th of February)
       - Also When: 1-2pm
-      - Attendance: OPTIONAL, although it will be fun :)
+      - Attendance: **OPTIONAL**, although it will be fun & we’ll make
+        some cool stuff & things :)
 
 <br>
 
-  - Structure:
+  - **Structure**:
       - New Data Set every other Tuesday
           - R for Data Science release a new data set every Tuesday.
       - Hour Long sessions with each module being pushed into a github
@@ -43,7 +72,13 @@ analysis methodically.
 
 ### Software
 
-  - What is needed from you :
+It is entirely possible to do this with Rstudio, Git, and/or Github, but
+one of the major benefits of Github is the ability to share code with
+ease. Rstudio has a great integration with Git & Github, so I will be
+using it to manage these projects as we go forward(if there is a need
+for a Git & Github class I am happy to sit down).
+
+  - What to install on your local machine:
       - Install Latest Version of Git
         [:link:](https://git-scm.com/downloads/) 1st
       - Install Latest Version of R
@@ -58,6 +93,13 @@ analysis methodically.
 At a bare minimum you will need the `tidyverse` package installed, which
 is a meta-package that loads 8 individual package all focused on tidy
 analysis.
+
+Running the following line of code inside your R environment and it will
+install all the required packages.
+
+``` r
+install.packages("tidyverse" , dependencies = TRUE) # meta package that loads 8 packages inside the tidyverse
+```
 
   - `tidyverse` - Meta package that loads the following packages
     [:link:](https://www.tidyverse.org/).
@@ -84,10 +126,3 @@ analysis.
       - `forcats` - R uses factors to handle categorical variables,
         variables that have a fixed and known set of possible values
         [:link:](https://forcats.tidyverse.org/).
-
-Running the following line of code will install all the required
-packages.
-
-``` r
-install.packages("tidyverse" , dependencies = TRUE) # data manipulation has 8 packages inside
-```
