@@ -28,6 +28,20 @@ unique value.
 **Example 2**: In the example below we are creating a variable `year`
 out of the columns `1999` & `2000`.
 
+  - Code break down:
+      - `who_cases_tidy`: new object we are creating
+      - `<-` : R’s assignment operator
+      - `who_cases` : our un-tidied data frame
+      - `%>%` : pipe, read as a `then` statment
+          - `pivot_longer` : we use this to pivot our un-tidy columns
+            into tidy ones
+              - `cols` is the parameter for our columns to select
+              - `names_to`: the new columns name
+              - `values_to`: is where we are place the values of the
+                columns of `1999` & `2000`
+
+<!-- end list -->
+
 ``` r
 who_cases_tidy <- who_cases %>% 
   pivot_longer(
@@ -92,7 +106,8 @@ for a Git & Github class I am happy to sit down).
 
 At a bare minimum you will need the `tidyverse` package installed, which
 is a meta-package that loads 8 individual package all focused on tidy
-analysis.
+analysis. We will also be using other packages on the fly, but we will
+address those as they arrive.
 
 Running the following line of code inside your R environment and it will
 install all the required packages.
