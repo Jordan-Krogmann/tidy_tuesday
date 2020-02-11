@@ -123,7 +123,8 @@ lm_mod %>%
 lm_mod %>% 
   augment() %>% 
   ggplot() + 
-    geom_point(aes(y = points, x = .fitted), alpha = .1)
+    geom_point(aes(y = points, x = .fitted), alpha = .1) + 
+    geom_abline(color = "red")
 ```
 
 
