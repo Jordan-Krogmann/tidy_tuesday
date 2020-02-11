@@ -72,6 +72,8 @@ It is entirely possible to do this with Rstudio, Git, and/or Github, but one of 
   
 
 ### R packages
+
+#### Tidyverse
   
 At a bare minimum you will need the `tidyverse` package installed, which is a meta-package that loads 8 individual package all focused on tidy analysis.
 
@@ -92,3 +94,8 @@ install.packages("tidyverse" , dependencies = TRUE) # meta package that loads 8 
   + `stringr` - provides a cohesive set of functions designed to make working with strings as easy as possible [:link:](https://stringr.tidyverse.org/).
   + `forcats` - R uses factors to handle categorical variables, variables that have a fixed and known set of possible values  [:link:](https://forcats.tidyverse.org/).
   
+
+
+#### Tidymodels
+
+coming soon

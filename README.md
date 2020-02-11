@@ -90,6 +90,8 @@ for a Git & Github class I am happy to sit down).
 
 ### R packages
 
+#### Tidyverse
+
 At a bare minimum you will need the `tidyverse` package installed, which
 is a meta-package that loads 8 individual package all focused on tidy
 analysis.
@@ -126,3 +128,7 @@ install.packages("tidyverse" , dependencies = TRUE) # meta package that loads 8 
       - `forcats` - R uses factors to handle categorical variables,
         variables that have a fixed and known set of possible values
         [:link:](https://forcats.tidyverse.org/).
+
+#### Tidymodels
+
+coming soon
