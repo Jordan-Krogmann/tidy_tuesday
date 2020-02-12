@@ -1,27 +1,39 @@
 
 # Set Up
 
+We are going to have to load in a few libraries with R’s native command
+`library`.
+
+## Packages for Part One
+
+In part one of our analysis, the `tidyverse` will be used for our data
+import, data manipulation, and visualization.
+
 ``` r
-# part 1
 library(tidyverse) # ggplot, tibble, tidyr, readr, purrr, dplyr, stringr, forcats
 ```
 
-    ## -- Attaching packages --------------------------------------------------------------- tidyverse 1.3.0 --
+    ## -- Attaching packages ---------------------------------------------------------------------------------------- tidyverse 1.3.0 --
 
     ## v ggplot2 3.2.1     v purrr   0.3.3
     ## v tibble  2.1.3     v dplyr   0.8.3
     ## v tidyr   1.0.0     v stringr 1.4.0
     ## v readr   1.3.1     v forcats 0.4.0
 
-    ## -- Conflicts ------------------------------------------------------------------ tidyverse_conflicts() --
+    ## -- Conflicts ------------------------------------------------------------------------------------------- tidyverse_conflicts() --
     ## x dplyr::filter() masks stats::filter()
     ## x dplyr::lag()    masks stats::lag()
 
+## Packages for Part Two
+
+In part two of our analysis, the packages, `broom`, `Matrix`,
+`tidytext`, `glmnet`, `doParallel`, will be used for tidying model
+outputs, tyding text data, and then preppring our data for penalized
+regression.
+
 ``` r
 library(broom)     # tidy model outputs
-
-
-# part 2
+library(tidytext)  # tidy text 
 library(Matrix)    # for sparce matrix
 ```
 
@@ -33,7 +45,6 @@ library(Matrix)    # for sparce matrix
     ##     expand, pack, unpack
 
 ``` r
-library(tidytext)  # tidy text 
 library(glmnet)    # penalized regression
 ```
 
@@ -56,7 +67,12 @@ library(doParallel)# parallel processing
 
     ## Loading required package: parallel
 
-# Data Pull
+# Part one
+
+## Data Pull
+
+We are going to pull in a data set from a repository on `Github` using
+`readr`’s function `read_csv`.
 
 ``` r
 wine_ratings <- read_csv(
@@ -84,7 +100,7 @@ wine_ratings <- read_csv(
     ##   winery = col_character()
     ## )
 
-# Clean up data frame
+## Clean up data frame
 
 ``` r
 # Check data frame
@@ -238,7 +254,7 @@ wine_df %>%
     geom_histogram(aes(year), binwidth = 1)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 ``` r
 # check dist of points
@@ -247,7 +263,7 @@ wine_df %>%
   geom_histogram(aes(points), binwidth = 1)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->
 
 ``` r
 # chekc the price distribution
@@ -259,7 +275,7 @@ wine_df %>%
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](README_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->
 
 # Model
 
@@ -366,7 +382,7 @@ wine_words_df %>%
   coord_flip()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ``` r
 wine_words_filtered_df <- wine_words_df %>%
@@ -431,7 +447,7 @@ glmnet_mod$glmnet.fit %>%
   )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ``` r
 # smaller the penalty the more terms in the model
@@ -448,14 +464,14 @@ glmnet_mod$glmnet.fit %>%
   )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
 
 ``` r
 # what's the best lambda
 plot(glmnet_mod)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
 
 ## Creating our own lexicon
 
@@ -483,7 +499,7 @@ lexicon_df %>%
        title = "What words are predictive of a wine's score?")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ``` r
 wine_words_df %>%
@@ -502,4 +518,4 @@ wine_words_df %>%
        y = "Effect on score")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
