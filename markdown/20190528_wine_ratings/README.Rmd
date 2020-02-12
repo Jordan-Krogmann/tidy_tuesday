@@ -4,20 +4,34 @@ output: github_document
 
 # Set Up
 
-```{r load-packages}
-# part 1
+We are going to have to load in a few libraries with R's native command `library`.
+
+## Packages for Part One
+
+In part one of our analysis, the `tidyverse` will be used for our data import, data manipulation, and visualization.
+
+```{r}
 library(tidyverse) # ggplot, tibble, tidyr, readr, purrr, dplyr, stringr, forcats
+```
+
+
+## Packages for Part Two
+
+In part two of our analysis, the packages, `broom`, `Matrix`, `tidytext`, `glmnet`, `doParallel`, will be used for tidying model outputs, tyding text data, and then preppring our data for penalized regression.
+
+```{r}
 library(broom)     # tidy model outputs
-
-
-# part 2
-library(Matrix)    # for sparce matrix
 library(tidytext)  # tidy text 
+library(Matrix)    # for sparce matrix
 library(glmnet)    # penalized regression
 library(doParallel)# parallel processing
 ```
 
-# Data Pull
+# Part one
+
+## Data Pull
+
+We are going to pull in a data set from a repository on `Github` using `readr`'s function `read_csv`. 
 
 ```{r pull-wine-df}
 wine_ratings <- read_csv(
@@ -25,7 +39,7 @@ wine_ratings <- read_csv(
 )
 ```
 
-# Clean up data frame
+## Clean up data frame
 
 ```{r check-df}
 # Check data frame
