@@ -109,7 +109,7 @@ tail(wine_ratings) # check bottom 5 observations
     ## # ... with 6 more variables: region_2 <chr>, taster_name <chr>,
     ## #   taster_twitter_handle <chr>, title <chr>, variety <chr>, winery <chr>
 
-Quick summary of data frame
+**Quick summary of data frame**
 
   - Using `skim()` from the `skimr` package we get a nice overview of
     our dataframe.
@@ -168,7 +168,7 @@ Data summary
 | points         |          0 |           1.00 |    88.45 |     3.04 | 80 |    86.0 |    88 |    91.0 |    100 | ▂▇▇▂▁ |
 | price          |       8996 |           0.93 |    35.36 |    41.02 |  4 |    17.0 |    25 |    42.0 |   3300 | ▇▁▁▁▁ |
 
-Data Cleanup
+**Data Cleanup**
 
   - Model’s don’t deal with `NA`s or missing values very well, so:
       - For *categorical*, values we want to replace that `NA` with a
@@ -180,7 +180,7 @@ Data Cleanup
   - The `title` column also has some useful information that we will
     want to extract out of it for instance `year`.
 
-Power of the **Pipe** a code-breakdown
+**Power of the Pipe a code-breakdown**
 
   - The `%>%` or **Pipe** is the logical equivalent to a **then**
     statement… So, why is the unbelievably awesome? As humans, we tend
@@ -242,14 +242,14 @@ One of the goals for this analysis is making a model(s) to predict the
 wine rating(`points`) of individual reviews(which is also why we cleaned
 the data).
 
-Things to explore:
+**Things to explore:**
 
   - plot distribution of `points`
   - plot distribution of `price`
   - plot count of reviews over time
   - plot anything else you can think of
 
-GGplot in action a code breakdown:
+**GGplot in action a code breakdown:**
 
   - plot distribution of points
       - we take our data `wine_df` then `%>%`
@@ -352,20 +352,72 @@ our data while controlling for several variables.
           - You are not going to build a neural net on a data set of
             10,000 observations
 
-Modeling Objectives:
+**Modeling Objectives:**
 
   - build a linear model
+      - dependent variable = points
+      - indendent variable = price + country + taster
   - evaluate our model
+      - variable significance
+      - adjusted r-square
+      - anova
+      - plot predicted vs. actual
 
-Building a linear model a code breakdown: + build a linear model
+**Building a linear model a code breakdown:**
+
+  - build a linear model
+      - we will create an object `lm_mod` and assign `<-` `wine_df` then
+        `%>%`
+      - change the categorical levels of `country` with `mutate()` &
+        `fct_lump()` then `%>%`
+      - model our data with `lm()` with our formula `points` \~
+        `log2(price)` + `country` + `taster_name` + `year`
+
+<!-- end list -->
 
 ``` r
 # train model
 lm_mod <- wine_df %>% 
   mutate(
-    country = fct_lump(country, n = 10)
+    country = fct_lump(country, n = 5),
+    taster_name = fct_lump(taster_name, n = 5)
   ) %>% 
-  lm(points ~ log2(price) + country + year, data = .) 
+  lm(points ~ log2(price) + country + taster_name + year, data = .) 
+```
+
+  - evaluate our model
+      - using our model object `lm_mod`
+
+<!-- end list -->
+
+``` r
+# check model coefs contribution of variance explanation
+lm_mod %>% 
+  tidy() %>% 
+  mutate(significane = case_when(p.value < .05 ~ "***",
+                                 p.value < .1 ~ "*",
+                                 TRUE ~ " ")) #%>% 
+```
+
+    ## # A tibble: 13 x 6
+    ##    term                  estimate std.error statistic   p.value significane
+    ##    <chr>                    <dbl>     <dbl>     <dbl>     <dbl> <chr>      
+    ##  1 (Intercept)           -1.04e+2   4.94       -21.1  4.99e- 99 ***        
+    ##  2 log2(price)            2.05e+0   0.00769    267.   0.        ***        
+    ##  3 countryItaly           5.74e-1   0.0514      11.2  4.96e- 29 ***        
+    ##  4 countryPortugal        8.20e-1   0.0395      20.7  1.93e- 95 ***        
+    ##  5 countrySpain           5.19e-1   0.0566       9.17 4.61e- 20 ***        
+    ##  6 countryUS             -4.33e-1   0.0396     -10.9  9.50e- 28 ***        
+    ##  7 countryOther           2.40e-1   0.0410       5.86 4.52e-  9 ***        
+    ##  8 taster_nameMichael S~ -7.62e-2   0.0544      -1.40 1.61e-  1 " "        
+    ##  9 taster_namemissing     2.80e-1   0.0393       7.12 1.08e- 12 ***        
+    ## 10 taster_nameRoger Voss  8.64e-1   0.0584      14.8  1.49e- 49 ***        
+    ## 11 taster_nameVirginie ~  7.74e-1   0.0477      16.2  5.23e- 59 ***        
+    ## 12 taster_nameOther       1.46e+0   0.0434      33.6  2.58e-246 ***        
+    ## 13 year                   9.07e-2   0.00245     37.0  8.24e-298 ***
+
+``` r
+  # select(-std.error, -statistic) %>% 
 ```
 
 ``` r
@@ -381,24 +433,6 @@ lm_mod %>%
 ```
 
 <img src="README_files/figure-gfm/model-check-1.png" style="display: block; margin: auto;" />
-
-``` r
-# check model coefs contribution of variance explanation
-lm_mod %>% 
-  anova() %>% 
-  tidy() %>% 
-  mutate(
-    contribution = sumsq/sum(sumsq)
-  )
-```
-
-    ## # A tibble: 4 x 7
-    ##   term            df   sumsq    meansq statistic p.value contribution
-    ##   <chr>        <int>   <dbl>     <dbl>     <dbl>   <dbl>        <dbl>
-    ## 1 log2(price)      1 393626. 393626.      72382.       0       0.371 
-    ## 2 country         10  25188.   2519.        463.       0       0.0238
-    ## 3 year             1  16009.  16009.       2944.       0       0.0151
-    ## 4 Residuals   114997 625375.      5.44       NA       NA       0.590
 
 ``` r
 # check predictions
@@ -462,7 +496,7 @@ wine_words_df %>%
   coord_flip()
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
 
 ``` r
 wine_words_filtered_df <- wine_words_df %>%
@@ -527,7 +561,7 @@ glmnet_mod$glmnet.fit %>%
   )
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
 
 ``` r
 # smaller the penalty the more terms in the model
@@ -544,14 +578,14 @@ glmnet_mod$glmnet.fit %>%
   )
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-7-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-8-2.png" style="display: block; margin: auto;" />
 
 ``` r
 # what's the best lambda
 plot(glmnet_mod)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-7-3.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-8-3.png" style="display: block; margin: auto;" />
 
 ## Creating our own lexicon
 
@@ -579,7 +613,7 @@ lexicon_df %>%
        title = "What words are predictive of a wine's score?")
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
 
 ``` r
 wine_words_df %>%
@@ -598,4 +632,4 @@ wine_words_df %>%
        y = "Effect on score")
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />

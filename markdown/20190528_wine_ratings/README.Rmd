@@ -66,7 +66,7 @@ head(wine_ratings) # check top 5 observations
 tail(wine_ratings) # check bottom 5 observations
 ```
 
-Quick summary of data frame
+**Quick summary of data frame**
 
 + Using `skim()` from the `skimr` package we get a nice overview of our dataframe.
   + We are probably going to have to address the `NA`s(**missing** values in `R`) in the categorical columns: `country`, `designation`, `province`, `region_1`, `region_2`,  `taster_name`, `taster_twitter_handle`, `variety`.
@@ -78,14 +78,14 @@ skim(wine_ratings) # quickly summarize our data frame
 ```
 
 
-Data Cleanup
+**Data Cleanup**
   
 + Model's don't deal with `NA`s or missing values very well, so:
   + For *categorical*, values we want to replace that `NA` with a character value of **missing** or **unknown**(the absence of information is information).
   + For *numeric* columns, there are loads of options like mean, median imputation or even some more advance techniques that I will talk about at some other time.
 + The `title` column also has some useful information that we will want to extract out of it for instance `year`.
 
-Power of the **Pipe** a code-breakdown
+**Power of the Pipe a code-breakdown**
 
 + The `%>%` or **Pipe** is the logical equivalent to a **then** statement... So, why is the unbelievably awesome?  As humans, we tend to work in a very procedural way, we take `thing` **then** do `other thing`... rinse and repeat
   + we want to create a new object `wine_df` and `<-` assign  `wine_ratings` **then** `%>%`
@@ -132,7 +132,7 @@ One of `tidyverse`'s/`R`'s best feature is the `ggplot2` package, which stands f
 
 We will want to start making some plots to start understanding our data. One of the goals for this analysis is making a model(s) to predict the wine rating(`points`) of individual reviews(which is also why we cleaned the data).
 
-Things to explore:
+**Things to explore:**
 
 + plot distribution of `points`
 + plot distribution of `price`
@@ -140,7 +140,7 @@ Things to explore:
 + plot anything else you can think of
 
 
-GGplot in action a code breakdown:
+**GGplot in action a code breakdown:**
 
 + plot distribution of points
   + we take our data `wine_df` then `%>%`
@@ -212,24 +212,50 @@ We have looked at a few variables(even though you should explore more!), but we 
     + You are not going to build a neural net on a data set of 10,000 observations
 
 
-Modeling Objectives:
+**Modeling Objectives:**
 
 + build a linear model
+  + dependent variable = points
+  + indendent variable = price + country + taster
 + evaluate our model
+  + variable significance
+  + adjusted r-square
+  + anova
+  + plot predicted vs. actual 
 
+**Building a linear model a code breakdown:**
 
-
-Building a linear model a code breakdown:
 + build a linear model 
+  + we will create an object `lm_mod` and assign `<-` `wine_df` then `%>%`
+  + change the categorical levels of `country` with `mutate()` & `fct_lump()` then `%>%`
+  + model our data with `lm()` with our formula `points` ~ `log2(price)` + `country` + `taster_name` + `year`
 
 ```{r}
 # train model
 lm_mod <- wine_df %>% 
   mutate(
-    country = fct_lump(country, n = 10)
+    country = fct_lump(country, n = 5),
+    taster_name = fct_lump(taster_name, n = 5)
   ) %>% 
-  lm(points ~ log2(price) + country + year, data = .) 
+  lm(points ~ log2(price) + country + taster_name + year, data = .) 
 ```
+
+
++ evaluate our model
+  + using our model object `lm_mod` 
+
+```{r}
+# check model coefs contribution of variance explanation
+lm_mod %>% 
+  tidy() %>% 
+  mutate(significane = case_when(p.value < .05 ~ "***",
+                                 p.value < .1 ~ "*",
+                                 TRUE ~ " ")) #%>% 
+  # select(-std.error, -statistic) %>% 
+  
+```
+
+
 
 ```{r model-check}
 # check coeff
@@ -242,13 +268,7 @@ lm_mod %>%
     geom_errorbar(aes(x = term, ymin = conf.low, ymax = conf.high)) + 
     coord_flip()
 
-# check model coefs contribution of variance explanation
-lm_mod %>% 
-  anova() %>% 
-  tidy() %>% 
-  mutate(
-    contribution = sumsq/sum(sumsq)
-  )
+
   
 # check predictions
 lm_mod %>% 
