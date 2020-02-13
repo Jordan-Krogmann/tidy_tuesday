@@ -3,8 +3,21 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+    echo = TRUE
+  , cache = TRUE
+  , fig.align = "center"
+  , fig.width = 8
+  , fig.height = 5
+  , dpi = 180
+)
 ```
+
+# Predicting Wine Ratings
+
+In this notebook, we will go over how to import, explore, and model data to understand it.  All of the code & data is open source, but I hope you can take the themes or examples out of this and use it within the business.
+
+![](./imgs/sponge-bob.jpg)
 
 # Set Up
 
@@ -14,7 +27,7 @@ We are going to have to load in a few libraries with R's native command `library
 
 In part one of our analysis, the `tidyverse` will be used for our data import, data manipulation, and visualization.
 
-```{r load-packages-1}
+```{r load-packages-1, warning=FALSE, message=FALSE  }
 library(tidyverse) # ggplot, tibble, tidyr, readr, purrr, dplyr, stringr, forcats
 library(skimr)     # quick data summaries
 ```
@@ -24,7 +37,7 @@ library(skimr)     # quick data summaries
 
 In part two of our analysis, the packages, `broom`, `Matrix`, `tidytext`, `glmnet`, `doParallel`, will be used for tidying model outputs, tying text data, and then prepping our data for penalized regression.
 
-```{r load-packages-2}
+```{r load-packages-2, warning=FALSE, message=FALSE}
 library(broom)     # tidy model outputs
 library(tidytext)  # tidy text 
 library(Matrix)    # for sparce matrix
@@ -89,7 +102,7 @@ wine_df <- wine_ratings %>%
   select(-X1) %>% 
   replace_na(list(country = "missing", province = "missing", taster_name = "missing")) %>% 
   extract(col = title, into = "year", regex = "(\\d\\d\\d\\d)", convert = TRUE, remove = FALSE) %>% 
-  mutate(year = ifelse(year > 2020, NA, year),
+  mutate(year = ifelse(year > 2025, NA, year),
          year = ifelse(year < 1970, NA, year)) %>% 
   filter(
     !is.na(price),
@@ -108,32 +121,106 @@ Boom... data cleaning... pretty much done... almost
 
 # Exploratory Data Analysis
 
-One of `tidyverse`'s/`R`'s best feature is the `ggplot2` package, which stands for the grammar of graphics ...2(the prophet Hadley retire the first iteration).  It allows us to quickly create production level graphs by continuously adding layers. 
+One of `tidyverse`'s/`R`'s best feature is the `ggplot2` package, which stands for the grammar of graphics ...2(the prophet Hadley retire the first iteration). 
+
+**Why is the grammar of graphics awesome?**
+ 
+ + It allows us to quickly create production level graphs by continuously adding layers.
+ + There are three mandatory things  *Data*, *Aesthetics*, & *Geometries* we need to define from `ggplot2` perspective, but we have control to or add the other layers when needed(*Facets*, *Statistics*, *Coordinates*, & `Theme`)
 
 ![](./imgs/grammar-of-graphics.png)
 
-+ checking distributions
-+ extra summary plots
+We will want to start making some plots to start understanding our data. One of the goals for this analysis is making a model(s) to predict the wine rating(`points`) of individual reviews(which is also why we cleaned the data).
+
+Things to explore:
+
++ plot distribution of `points`
++ plot distribution of `price`
++ plot count of reviews over time
++ plot anything else you can think of
+
+
+GGplot in action a code breakdown:
+
++ plot distribution of points
+  + we take our data `wine_df` then `%>%`
+  + use the `ggplot()` and 
+  + give an aesthetic `aes()` and add `+` 
+  + a geometry `geom_histogram()` and add `+`
+  + (optional) a theme `theme_minimal()` and add `+`
+  + (optional) a title `labs()`
 
 ```{r}
-# check years
+# check the distribution of points
 wine_df %>%
-    ggplot() + 
-    geom_histogram(aes(year), binwidth = 1)
-
-# check dist of points
-wine_df %>% 
-  ggplot() + 
-  geom_histogram(aes(points), binwidth = 1)
-
-# chekc the price distribution
-wine_df %>% 
-  ggplot() + 
-  geom_histogram(aes(price)) +
-  scale_x_log10()
+    ggplot(aes(x = points)) + 
+    geom_histogram( binwidth = 1) + 
+    theme_minimal() + 
+    labs(
+      title = "Wine Ratings(Points) are normally Distributed",
+      subtitle = "",
+      caption = "*Having a normal distribution for our target variable is good for a linear model",
+      y = "Count",
+      x = "Wine Rating"
+    )
 ```
 
-# Model 
++ plot distribution of `price`
+  + Notice how the distribution is heavily skewed.  From a modeling standpoint we would want to scale that variable to see if it is *Log Normally Distributed*.
+    + Why does that help? 
+      + Certain types of models operated off of assumptions, in this case, the linear model we want to use demands that our dependent variable(`points`) needs to be normally distribute.  It also operates best when our independent variable(s)(`price`) are normally distributed as well.
+
+  
+```{r}
+wine_df %>% 
+  ggplot(aes(x = price)) + 
+    geom_histogram(bins = 30)
+```
+  
+  + If we add `+` `scale_x_log10()` to our plot, we see that our price variable is *Log Normally Distributed*.
+  
+```{r}
+wine_df %>% 
+  ggplot(aes(x = price)) + 
+    geom_histogram(bins = 30) + 
+    scale_x_log10()
+```
+
+
++ plot count of reviews over time
+  + here we can see the number of reviews in each year.
+
+```{r}
+wine_df %>% 
+  group_by(year) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x = year, y = count))+ 
+    geom_col()
+```
+
+
+# Model Building
+
+We have looked at a few variables(even though you should explore more!), but we only have a loose understanding in a uni-variate or by-variate sense.  Modeling allows us to create a better understanding of our data while controlling for several variables.
+
++ Jordan's views on Modeling:
+  + Start Simple: Linear Models such as Ordinary Least Squares regression are great as long as the assumptions are adhered to(see plotting explanations).
+  + *"The most that can be expected from any model is that it can supply a useful approximation to reality: All models are wrong; some models are useful"* ~ George Box
+    + Models generalize a problem they have variance, but knowing that let's us know how to utilize what they tell us.
+  + There is No Free Lunch Theorem: States that without running models and comparing, no algorithm is said to work better than any other.
+    + Basically states that there isn't one true model that works well on all problems.
+    + You are not going to build a neural net on a data set of 10,000 observations
+
+
+Modeling Objectives:
+
++ build a linear model
++ evaluate our model
+
+
+
+Building a linear model a code breakdown:
++ build a linear model 
 
 ```{r}
 # train model

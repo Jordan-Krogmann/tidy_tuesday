@@ -1,4 +1,13 @@
 
+# Predicting Wine Ratings
+
+In this notebook, we will go over how to import, explore, and model data
+to understand it. All of the code & data is open source, but I hope you
+can take the themes or examples out of this and use it within the
+business.
+
+![](./imgs/sponge-bob.jpg)
+
 # Set Up
 
 We are going to have to load in a few libraries with R’s native command
@@ -11,20 +20,6 @@ import, data manipulation, and visualization.
 
 ``` r
 library(tidyverse) # ggplot, tibble, tidyr, readr, purrr, dplyr, stringr, forcats
-```
-
-    ## -- Attaching packages ------------------------------------------------------------------ tidyverse 1.3.0 --
-
-    ## v ggplot2 3.2.1     v purrr   0.3.3
-    ## v tibble  2.1.3     v dplyr   0.8.3
-    ## v tidyr   1.0.0     v stringr 1.4.0
-    ## v readr   1.3.1     v forcats 0.4.0
-
-    ## -- Conflicts --------------------------------------------------------------------- tidyverse_conflicts() --
-    ## x dplyr::filter() masks stats::filter()
-    ## x dplyr::lag()    masks stats::lag()
-
-``` r
 library(skimr)     # quick data summaries
 ```
 
@@ -39,37 +34,9 @@ regression.
 library(broom)     # tidy model outputs
 library(tidytext)  # tidy text 
 library(Matrix)    # for sparce matrix
-```
-
-    ## 
-    ## Attaching package: 'Matrix'
-
-    ## The following objects are masked from 'package:tidyr':
-    ## 
-    ##     expand, pack, unpack
-
-``` r
 library(glmnet)    # penalized regression
-```
-
-    ## Loaded glmnet 3.0-1
-
-``` r
 library(doParallel)# parallel processing
 ```
-
-    ## Loading required package: foreach
-
-    ## 
-    ## Attaching package: 'foreach'
-
-    ## The following objects are masked from 'package:purrr':
-    ## 
-    ##     accumulate, when
-
-    ## Loading required package: iterators
-
-    ## Loading required package: parallel
 
 # Part one
 
@@ -115,32 +82,32 @@ head(wine_ratings) # check top 5 observations
 ```
 
     ## # A tibble: 6 x 14
-    ##      X1 country description designation points price province region_1 region_2
-    ##   <dbl> <chr>   <chr>       <chr>        <dbl> <dbl> <chr>    <chr>    <chr>   
-    ## 1     0 Italy   Aromas inc~ Vulkà Bian~     87    NA Sicily ~ Etna     <NA>    
-    ## 2     1 Portug~ This is ri~ Avidagos        87    15 Douro    <NA>     <NA>    
-    ## 3     2 US      Tart and s~ <NA>            87    14 Oregon   Willame~ Willame~
-    ## 4     3 US      Pineapple ~ Reserve La~     87    13 Michigan Lake Mi~ <NA>    
-    ## 5     4 US      Much like ~ Vintner's ~     87    65 Oregon   Willame~ Willame~
-    ## 6     5 Spain   Blackberry~ Ars In Vit~     87    15 Norther~ Navarra  <NA>    
-    ## # ... with 5 more variables: taster_name <chr>, taster_twitter_handle <chr>,
-    ## #   title <chr>, variety <chr>, winery <chr>
+    ##      X1 country description designation points price province region_1
+    ##   <dbl> <chr>   <chr>       <chr>        <dbl> <dbl> <chr>    <chr>   
+    ## 1     0 Italy   Aromas inc~ Vulkà Bian~     87    NA Sicily ~ Etna    
+    ## 2     1 Portug~ This is ri~ Avidagos        87    15 Douro    <NA>    
+    ## 3     2 US      Tart and s~ <NA>            87    14 Oregon   Willame~
+    ## 4     3 US      Pineapple ~ Reserve La~     87    13 Michigan Lake Mi~
+    ## 5     4 US      Much like ~ Vintner's ~     87    65 Oregon   Willame~
+    ## 6     5 Spain   Blackberry~ Ars In Vit~     87    15 Norther~ Navarra 
+    ## # ... with 6 more variables: region_2 <chr>, taster_name <chr>,
+    ## #   taster_twitter_handle <chr>, title <chr>, variety <chr>, winery <chr>
 
 ``` r
 tail(wine_ratings) # check bottom 5 observations
 ```
 
     ## # A tibble: 6 x 14
-    ##       X1 country description designation points price province region_1 region_2
-    ##    <dbl> <chr>   <chr>       <chr>        <dbl> <dbl> <chr>    <chr>    <chr>   
-    ## 1 129965 France  While it's~ Seppi Land~     90    28 Alsace   Alsace   <NA>    
-    ## 2 129966 Germany Notes of h~ Brauneberg~     90    28 Mosel    <NA>     <NA>    
-    ## 3 129967 US      Citation i~ <NA>            90    75 Oregon   Oregon   Oregon ~
-    ## 4 129968 France  Well-drain~ Kritt           90    30 Alsace   Alsace   <NA>    
-    ## 5 129969 France  A dry styl~ <NA>            90    32 Alsace   Alsace   <NA>    
-    ## 6 129970 France  Big, rich ~ Lieu-dit H~     90    21 Alsace   Alsace   <NA>    
-    ## # ... with 5 more variables: taster_name <chr>, taster_twitter_handle <chr>,
-    ## #   title <chr>, variety <chr>, winery <chr>
+    ##       X1 country description designation points price province region_1
+    ##    <dbl> <chr>   <chr>       <chr>        <dbl> <dbl> <chr>    <chr>   
+    ## 1 129965 France  While it's~ Seppi Land~     90    28 Alsace   Alsace  
+    ## 2 129966 Germany Notes of h~ Brauneberg~     90    28 Mosel    <NA>    
+    ## 3 129967 US      Citation i~ <NA>            90    75 Oregon   Oregon  
+    ## 4 129968 France  Well-drain~ Kritt           90    30 Alsace   Alsace  
+    ## 5 129969 France  A dry styl~ <NA>            90    32 Alsace   Alsace  
+    ## 6 129970 France  Big, rich ~ Lieu-dit H~     90    21 Alsace   Alsace  
+    ## # ... with 6 more variables: region_2 <chr>, taster_name <chr>,
+    ## #   taster_twitter_handle <chr>, title <chr>, variety <chr>, winery <chr>
 
 Quick summary of data frame
 
@@ -238,7 +205,7 @@ wine_df <- wine_ratings %>%
   select(-X1) %>% 
   replace_na(list(country = "missing", province = "missing", taster_name = "missing")) %>% 
   extract(col = title, into = "year", regex = "(\\d\\d\\d\\d)", convert = TRUE, remove = FALSE) %>% 
-  mutate(year = ifelse(year > 2020, NA, year),
+  mutate(year = ifelse(year > 2025, NA, year),
          year = ifelse(year < 1970, NA, year)) %>% 
   filter(
     !is.na(price),
@@ -257,47 +224,140 @@ Boom… data cleaning… pretty much done… almost
 
 One of `tidyverse`’s/`R`’s best feature is the `ggplot2` package, which
 stands for the grammar of graphics …2(the prophet Hadley retire the
-first iteration). It allows us to quickly create production level graphs
-by continuously adding layers.
+first iteration).
+
+**Why is the grammar of graphics awesome?**
+
+  - It allows us to quickly create production level graphs by
+    continuously adding layers.
+  - There are three mandatory things *Data*, *Aesthetics*, &
+    *Geometries* we need to define from `ggplot2` perspective, but we
+    have control to or add the other layers when needed(*Facets*,
+    *Statistics*, *Coordinates*, & `Theme`)
 
 ![](./imgs/grammar-of-graphics.png)
 
-  - checking distributions
-  - extra summary plots
+We will want to start making some plots to start understanding our data.
+One of the goals for this analysis is making a model(s) to predict the
+wine rating(`points`) of individual reviews(which is also why we cleaned
+the data).
+
+Things to explore:
+
+  - plot distribution of `points`
+  - plot distribution of `price`
+  - plot count of reviews over time
+  - plot anything else you can think of
+
+GGplot in action a code breakdown:
+
+  - plot distribution of points
+      - we take our data `wine_df` then `%>%`
+      - use the `ggplot()` and
+      - give an aesthetic `aes()` and add `+`
+      - a geometry `geom_histogram()` and add `+`
+      - (optional) a theme `theme_minimal()` and add `+`
+      - (optional) a title `labs()`
 
 <!-- end list -->
 
 ``` r
-# check years
+# check the distribution of points
 wine_df %>%
-    ggplot() + 
-    geom_histogram(aes(year), binwidth = 1)
+    ggplot(aes(x = points)) + 
+    geom_histogram( binwidth = 1) + 
+    theme_minimal() + 
+    labs(
+      title = "Wine Ratings(Points) are normally Distributed",
+      subtitle = "",
+      caption = "*Having a normal distribution for our target variable is good for a linear model",
+      y = "Count",
+      x = "Wine Rating"
+    )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+<img src="README_files/figure-gfm/unnamed-chunk-1-1.png" style="display: block; margin: auto;" />
+
+  - plot distribution of `price`
+      - Notice how the distribution is heavily skewed. From a modeling
+        standpoint we would want to scale that variable to see if it is
+        *Log Normally Distributed*.
+          - Why does that help?
+              - Certain types of models operated off of assumptions, in
+                this case, the linear model we want to use demands that
+                our dependent variable(`points`) needs to be normally
+                distribute. It also operates best when our independent
+                variable(s)(`price`) are normally distributed as well.
+
+<!-- end list -->
 
 ``` r
-# check dist of points
 wine_df %>% 
-  ggplot() + 
-  geom_histogram(aes(points), binwidth = 1)
+  ggplot(aes(x = price)) + 
+    geom_histogram(bins = 30)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->
+<img src="README_files/figure-gfm/unnamed-chunk-2-1.png" style="display: block; margin: auto;" />
+
+  - If we add `+` `scale_x_log10()` to our plot, we see that our price
+    variable is *Log Normally Distributed*.
+
+<!-- end list -->
 
 ``` r
-# chekc the price distribution
 wine_df %>% 
-  ggplot() + 
-  geom_histogram(aes(price)) +
-  scale_x_log10()
+  ggplot(aes(x = price)) + 
+    geom_histogram(bins = 30) + 
+    scale_x_log10()
 ```
 
-    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+<img src="README_files/figure-gfm/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
 
-![](README_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->
+  - plot count of reviews over time
+      - here we can see the number of reviews in each year.
 
-# Model
+<!-- end list -->
+
+``` r
+wine_df %>% 
+  group_by(year) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x = year, y = count))+ 
+    geom_col()
+```
+
+<img src="README_files/figure-gfm/unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
+
+# Model Building
+
+We have looked at a few variables(even though you should explore
+more\!), but we only have a loose understanding in a uni-variate or
+by-variate sense. Modeling allows us to create a better understanding of
+our data while controlling for several variables.
+
+  - Jordan’s views on Modeling:
+      - Start Simple: Linear Models such as Ordinary Least Squares
+        regression are great as long as the assumptions are adhered
+        to(see plotting explanations).
+      - *“The most that can be expected from any model is that it can
+        supply a useful approximation to reality: All models are wrong;
+        some models are useful”* \~ George Box
+          - Models generalize a problem they have variance, but knowing
+            that let’s us know how to utilize what they tell us.
+      - There is No Free Lunch Theorem: States that without running
+        models and comparing, no algorithm is said to work better than
+        any other.
+          - Basically states that there isn’t one true model that works
+            well on all problems.
+          - You are not going to build a neural net on a data set of
+            10,000 observations
+
+Modeling Objectives:
+
+  - build a linear model
+  - evaluate our model
+
+Building a linear model a code breakdown: + build a linear model
 
 ``` r
 # train model
@@ -320,7 +380,7 @@ lm_mod %>%
     coord_flip()
 ```
 
-![](README_files/figure-gfm/model-check-1.png)<!-- -->
+<img src="README_files/figure-gfm/model-check-1.png" style="display: block; margin: auto;" />
 
 ``` r
 # check model coefs contribution of variance explanation
@@ -349,7 +409,7 @@ lm_mod %>%
     geom_abline(color = "red")
 ```
 
-![](README_files/figure-gfm/model-check-2.png)<!-- -->
+<img src="README_files/figure-gfm/model-check-2.png" style="display: block; margin: auto;" />
 
 # Text mining
 
@@ -402,7 +462,7 @@ wine_words_df %>%
   coord_flip()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+<img src="README_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
 ``` r
 wine_words_filtered_df <- wine_words_df %>%
@@ -467,7 +527,7 @@ glmnet_mod$glmnet.fit %>%
   )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+<img src="README_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
 
 ``` r
 # smaller the penalty the more terms in the model
@@ -484,14 +544,14 @@ glmnet_mod$glmnet.fit %>%
   )
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
+<img src="README_files/figure-gfm/unnamed-chunk-7-2.png" style="display: block; margin: auto;" />
 
 ``` r
 # what's the best lambda
 plot(glmnet_mod)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
+<img src="README_files/figure-gfm/unnamed-chunk-7-3.png" style="display: block; margin: auto;" />
 
 ## Creating our own lexicon
 
@@ -519,7 +579,7 @@ lexicon_df %>%
        title = "What words are predictive of a wine's score?")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+<img src="README_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
 
 ``` r
 wine_words_df %>%
@@ -538,4 +598,4 @@ wine_words_df %>%
        y = "Effect on score")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+<img src="README_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
