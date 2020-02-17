@@ -203,7 +203,13 @@ Data summary
 ``` r
 wine_df <- wine_ratings %>% 
   select(-X1) %>% 
-  replace_na(list(country = "missing", province = "missing", taster_name = "missing")) %>% 
+  replace_na(
+    list(
+      country = "missing",
+      province = "missing",
+      taster_name = "missing"
+      )
+  ) %>% 
   extract(col = title, into = "year", regex = "(\\d\\d\\d\\d)", convert = TRUE, remove = FALSE) %>% 
   mutate(year = ifelse(year > 2025, NA, year),
          year = ifelse(year < 1970, NA, year)) %>% 
@@ -294,7 +300,8 @@ wine_df %>%
 ``` r
 wine_df %>% 
   ggplot(aes(x = price)) + 
-    geom_histogram(bins = 30)
+    geom_histogram(bins = 30) +
+    theme_minimal()
 ```
 
 <img src="README_files/figure-gfm/unnamed-chunk-2-1.png" style="display: block; margin: auto;" />
@@ -308,7 +315,8 @@ wine_df %>%
 wine_df %>% 
   ggplot(aes(x = price)) + 
     geom_histogram(bins = 30) + 
-    scale_x_log10()
+    scale_x_log10() +
+    theme_minimal() 
 ```
 
 <img src="README_files/figure-gfm/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
@@ -323,7 +331,8 @@ wine_df %>%
   group_by(year) %>% 
   summarise(count = n()) %>% 
   ggplot(aes(x = year, y = count))+ 
-    geom_col()
+    geom_col() +
+    theme_minimal()
 ```
 
 <img src="README_files/figure-gfm/unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
@@ -385,8 +394,350 @@ lm_mod <- wine_df %>%
   lm(points ~ log2(price) + country + taster_name + year, data = .) 
 ```
 
+## Model Evaluation
+
+In this case, we want to build a model that explains the relationship
+for wine ratings… to do that we will need to know how to evaluate our
+model. There are a bunch of different ways for model evalution, some are
+for model specific performance and others relate more the the model
+inner workings. We are using *Ordinary Least Squares* model, so we can
+use some stock-standard metrics that are good for linear models(some of
+these are good for non-linear models). For this exercise, we will be
+using the `broom` package and its three commands `glance()`, `tidy()`, &
+`augment()`.
+
   - evaluate our model
-      - using our model object `lm_mod`
+      - adjusted r-square: is great for looking at how well a model
+        explains the variance of our dependent variable. It is on a
+        scale from 0-1(higher is better). We will use `glance()`
+        function to extract the adjusted r-square.
+          - In our case, our model explains 42% of our variance. Not the
+            best in the model in the world …
+
+<!-- end list -->
+
+``` r
+lm_mod %>% 
+  glance() %>% 
+  select(adj.r.squared)
+```
+
+    ## # A tibble: 1 x 1
+    ##   adj.r.squared
+    ##           <dbl>
+    ## 1         0.422
+
+  - anova: running an anova test will let us see what each of out
+    variables contribute to the r-squared value. To get the r-square y
+    variable we take the sum of squared error by variable divided by the
+    total of the square error(code `mutate(contribution = sumsq
+    /sum(sumsq))`).
+      - `price`: contributes most of the variance explanation at 37%
+      - `taster_name`: contributes only 3.4%
+      - `year`: contributes only .68%
+      - While `price` works great we might need some better features.
+
+<!-- end list -->
+
+``` r
+lm_mod %>% 
+  anova() %>% 
+  tidy() %>% 
+  mutate(contribution = sumsq /sum(sumsq))%>% 
+  kableExtra::kable()
+```
+
+<table>
+
+<thead>
+
+<tr>
+
+<th style="text-align:left;">
+
+term
+
+</th>
+
+<th style="text-align:right;">
+
+df
+
+</th>
+
+<th style="text-align:right;">
+
+sumsq
+
+</th>
+
+<th style="text-align:right;">
+
+meansq
+
+</th>
+
+<th style="text-align:right;">
+
+statistic
+
+</th>
+
+<th style="text-align:right;">
+
+p.value
+
+</th>
+
+<th style="text-align:right;">
+
+contribution
+
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td style="text-align:left;">
+
+log2(price)
+
+</td>
+
+<td style="text-align:right;">
+
+1
+
+</td>
+
+<td style="text-align:right;">
+
+393625.621
+
+</td>
+
+<td style="text-align:right;">
+
+3.936256e+05
+
+</td>
+
+<td style="text-align:right;">
+
+73904.2395
+
+</td>
+
+<td style="text-align:right;">
+
+0
+
+</td>
+
+<td style="text-align:right;">
+
+0.3712757
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+country
+
+</td>
+
+<td style="text-align:right;">
+
+5
+
+</td>
+
+<td style="text-align:right;">
+
+10308.690
+
+</td>
+
+<td style="text-align:right;">
+
+2.061738e+03
+
+</td>
+
+<td style="text-align:right;">
+
+387.0967
+
+</td>
+
+<td style="text-align:right;">
+
+0
+
+</td>
+
+<td style="text-align:right;">
+
+0.0097234
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+taster\_name
+
+</td>
+
+<td style="text-align:right;">
+
+5
+
+</td>
+
+<td style="text-align:right;">
+
+36482.262
+
+</td>
+
+<td style="text-align:right;">
+
+7.296452e+03
+
+</td>
+
+<td style="text-align:right;">
+
+1369.9280
+
+</td>
+
+<td style="text-align:right;">
+
+0
+
+</td>
+
+<td style="text-align:right;">
+
+0.0344108
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+year
+
+</td>
+
+<td style="text-align:right;">
+
+1
+
+</td>
+
+<td style="text-align:right;">
+
+7289.057
+
+</td>
+
+<td style="text-align:right;">
+
+7.289057e+03
+
+</td>
+
+<td style="text-align:right;">
+
+1368.5396
+
+</td>
+
+<td style="text-align:right;">
+
+0
+
+</td>
+
+<td style="text-align:right;">
+
+0.0068752
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+Residuals
+
+</td>
+
+<td style="text-align:right;">
+
+114997
+
+</td>
+
+<td style="text-align:right;">
+
+612492.137
+
+</td>
+
+<td style="text-align:right;">
+
+5.326157e+00
+
+</td>
+
+<td style="text-align:right;">
+
+NA
+
+</td>
+
+<td style="text-align:right;">
+
+NA
+
+</td>
+
+<td style="text-align:right;">
+
+0.5777150
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+  - variable significance: We can also check for individual variable
+    importance each of our features… Notice, the only non-significant
+    term is `taster_name:Michael Schachner`.
 
 <!-- end list -->
 
@@ -396,29 +747,579 @@ lm_mod %>%
   tidy() %>% 
   mutate(significane = case_when(p.value < .05 ~ "***",
                                  p.value < .1 ~ "*",
-                                 TRUE ~ " ")) #%>% 
+                                 TRUE ~ " ")) %>% 
+  kableExtra::kable() 
 ```
 
-    ## # A tibble: 13 x 6
-    ##    term                  estimate std.error statistic   p.value significane
-    ##    <chr>                    <dbl>     <dbl>     <dbl>     <dbl> <chr>      
-    ##  1 (Intercept)           -1.04e+2   4.94       -21.1  4.99e- 99 ***        
-    ##  2 log2(price)            2.05e+0   0.00769    267.   0.        ***        
-    ##  3 countryItaly           5.74e-1   0.0514      11.2  4.96e- 29 ***        
-    ##  4 countryPortugal        8.20e-1   0.0395      20.7  1.93e- 95 ***        
-    ##  5 countrySpain           5.19e-1   0.0566       9.17 4.61e- 20 ***        
-    ##  6 countryUS             -4.33e-1   0.0396     -10.9  9.50e- 28 ***        
-    ##  7 countryOther           2.40e-1   0.0410       5.86 4.52e-  9 ***        
-    ##  8 taster_nameMichael S~ -7.62e-2   0.0544      -1.40 1.61e-  1 " "        
-    ##  9 taster_namemissing     2.80e-1   0.0393       7.12 1.08e- 12 ***        
-    ## 10 taster_nameRoger Voss  8.64e-1   0.0584      14.8  1.49e- 49 ***        
-    ## 11 taster_nameVirginie ~  7.74e-1   0.0477      16.2  5.23e- 59 ***        
-    ## 12 taster_nameOther       1.46e+0   0.0434      33.6  2.58e-246 ***        
-    ## 13 year                   9.07e-2   0.00245     37.0  8.24e-298 ***
+<table>
 
-``` r
-  # select(-std.error, -statistic) %>% 
-```
+<thead>
+
+<tr>
+
+<th style="text-align:left;">
+
+term
+
+</th>
+
+<th style="text-align:right;">
+
+estimate
+
+</th>
+
+<th style="text-align:right;">
+
+std.error
+
+</th>
+
+<th style="text-align:right;">
+
+statistic
+
+</th>
+
+<th style="text-align:right;">
+
+p.value
+
+</th>
+
+<th style="text-align:left;">
+
+significane
+
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td style="text-align:left;">
+
+(Intercept)
+
+</td>
+
+<td style="text-align:right;">
+
+\-104.4965157
+
+</td>
+
+<td style="text-align:right;">
+
+4.9424670
+
+</td>
+
+<td style="text-align:right;">
+
+\-21.142583
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+log2(price)
+
+</td>
+
+<td style="text-align:right;">
+
+2.0538483
+
+</td>
+
+<td style="text-align:right;">
+
+0.0076887
+
+</td>
+
+<td style="text-align:right;">
+
+267.126401
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+countryItaly
+
+</td>
+
+<td style="text-align:right;">
+
+0.5744174
+
+</td>
+
+<td style="text-align:right;">
+
+0.0513529
+
+</td>
+
+<td style="text-align:right;">
+
+11.185687
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+countryPortugal
+
+</td>
+
+<td style="text-align:right;">
+
+0.8203818
+
+</td>
+
+<td style="text-align:right;">
+
+0.0395412
+
+</td>
+
+<td style="text-align:right;">
+
+20.747505
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+countrySpain
+
+</td>
+
+<td style="text-align:right;">
+
+0.5190909
+
+</td>
+
+<td style="text-align:right;">
+
+0.0565797
+
+</td>
+
+<td style="text-align:right;">
+
+9.174509
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+countryUS
+
+</td>
+
+<td style="text-align:right;">
+
+\-0.4326704
+
+</td>
+
+<td style="text-align:right;">
+
+0.0396204
+
+</td>
+
+<td style="text-align:right;">
+
+\-10.920393
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+countryOther
+
+</td>
+
+<td style="text-align:right;">
+
+0.2404712
+
+</td>
+
+<td style="text-align:right;">
+
+0.0410065
+
+</td>
+
+<td style="text-align:right;">
+
+5.864218
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+taster\_nameMichael Schachner
+
+</td>
+
+<td style="text-align:right;">
+
+\-0.0762123
+
+</td>
+
+<td style="text-align:right;">
+
+0.0543862
+
+</td>
+
+<td style="text-align:right;">
+
+\-1.401316
+
+</td>
+
+<td style="text-align:right;">
+
+0.1611222
+
+</td>
+
+<td style="text-align:left;">
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+taster\_namemissing
+
+</td>
+
+<td style="text-align:right;">
+
+0.2801065
+
+</td>
+
+<td style="text-align:right;">
+
+0.0393378
+
+</td>
+
+<td style="text-align:right;">
+
+7.120549
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+taster\_nameRoger Voss
+
+</td>
+
+<td style="text-align:right;">
+
+0.8644397
+
+</td>
+
+<td style="text-align:right;">
+
+0.0583839
+
+</td>
+
+<td style="text-align:right;">
+
+14.806126
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+taster\_nameVirginie Boone
+
+</td>
+
+<td style="text-align:right;">
+
+0.7735481
+
+</td>
+
+<td style="text-align:right;">
+
+0.0477291
+
+</td>
+
+<td style="text-align:right;">
+
+16.207065
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+taster\_nameOther
+
+</td>
+
+<td style="text-align:right;">
+
+1.4593860
+
+</td>
+
+<td style="text-align:right;">
+
+0.0434332
+
+</td>
+
+<td style="text-align:right;">
+
+33.600713
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+year
+
+</td>
+
+<td style="text-align:right;">
+
+0.0906937
+
+</td>
+
+<td style="text-align:right;">
+
+0.0024516
+
+</td>
+
+<td style="text-align:right;">
+
+36.993778
+
+</td>
+
+<td style="text-align:right;">
+
+0.0000000
+
+</td>
+
+<td style="text-align:left;">
+
+\*\*\*
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
 
 ``` r
 # check coeff
@@ -429,10 +1330,25 @@ lm_mod %>%
   ggplot() + 
     geom_point(aes(x = term, y = estimate)) + 
     geom_errorbar(aes(x = term, ymin = conf.low, ymax = conf.high)) + 
-    coord_flip()
+    theme_minimal() + 
+    coord_flip() + 
+    labs(
+      title = "Coefficient Plot",
+      subtitle = "Each time price doubles the rating of the wine increases by 2 points",
+      x = "",
+      y = "Variable estimate"
+    )
 ```
 
 <img src="README_files/figure-gfm/model-check-1.png" style="display: block; margin: auto;" />
+
+  - plot predicted vs. actual: This is another one of my favorite plots
+    to quickly check how a model is doing. We are going to use the
+    `augment()` function to add our predicted values to our data set.
+      - A perfect model would line up exactly on a diagnal line, so our
+        model is far from perfect.
+
+<!-- end list -->
 
 ``` r
 # check predictions
@@ -440,10 +1356,16 @@ lm_mod %>%
   augment() %>% 
   ggplot() + 
     geom_point(aes(y = points, x = .fitted), alpha = .1) + 
-    geom_abline(color = "red")
+    geom_abline(color = "red") + 
+    theme_minimal() + 
+    labs(
+      title = "Actuals vs Predicted",
+      y = "Actuals",
+      x = "Predicted"
+    )
 ```
 
-<img src="README_files/figure-gfm/model-check-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
 
 # Text mining
 
@@ -493,10 +1415,11 @@ wine_words_df %>%
   mutate(word = fct_reorder(word, n)) %>%
   ggplot(aes(word, n)) +
   geom_col() +
+  theme_minimal() + 
   coord_flip()
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
 
 ``` r
 wine_words_filtered_df <- wine_words_df %>%
@@ -556,12 +1479,13 @@ glmnet_mod$glmnet.fit %>%
   geom_line() +
   scale_x_log10() +
   geom_hline(lty = 2, yintercept = 0) + 
+  theme_minimal() + 
   labs(
     title = "Lambda's impact on Coefficients"
   )
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
 
 ``` r
 # smaller the penalty the more terms in the model
@@ -570,7 +1494,8 @@ glmnet_mod$glmnet.fit %>%
   count(lambda) %>%
   ggplot(aes(lambda, n)) +
   geom_line() +
-  scale_x_log10() + 
+  scale_x_log10() +
+  theme_minimal() + 
   labs(
     title = "As Lambda Increases(Our Penalty) the Number of our Terms Decreases",
     y = "Number of Terms",
@@ -578,14 +1503,14 @@ glmnet_mod$glmnet.fit %>%
   )
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-8-2.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-11-2.png" style="display: block; margin: auto;" />
 
 ``` r
 # what's the best lambda
 plot(glmnet_mod)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-8-3.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-11-3.png" style="display: block; margin: auto;" />
 
 ## Creating our own lexicon
 
@@ -608,12 +1533,13 @@ lexicon_df %>%
   ggplot(aes(word, coefficient, fill = direction)) +
   geom_col() +
   coord_flip() +
+  theme_minimal() + 
   labs(x = "",
        y = "Estimated effect of the word on the score",
        title = "What words are predictive of a wine's score?")
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
 
 ``` r
 wine_words_df %>%
@@ -626,10 +1552,11 @@ wine_words_df %>%
   geom_col(show.legend = FALSE) +
   coord_flip() +
   facet_wrap(~ wine, scales = "free_y") +
+  theme_minimal() + 
   labs(title = "How a lasso regression would predict each wine's score",
        subtitle = "Using a lasso regression with an extra term for price",
        x = "",
        y = "Effect on score")
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-13-1.png" style="display: block; margin: auto;" />

@@ -100,7 +100,13 @@ skim(wine_ratings) # quickly summarize our data frame
 ```{r process-df}
 wine_df <- wine_ratings %>% 
   select(-X1) %>% 
-  replace_na(list(country = "missing", province = "missing", taster_name = "missing")) %>% 
+  replace_na(
+    list(
+      country = "missing",
+      province = "missing",
+      taster_name = "missing"
+      )
+  ) %>% 
   extract(col = title, into = "year", regex = "(\\d\\d\\d\\d)", convert = TRUE, remove = FALSE) %>% 
   mutate(year = ifelse(year > 2025, NA, year),
          year = ifelse(year < 1970, NA, year)) %>% 
@@ -174,7 +180,8 @@ wine_df %>%
 ```{r}
 wine_df %>% 
   ggplot(aes(x = price)) + 
-    geom_histogram(bins = 30)
+    geom_histogram(bins = 30) +
+    theme_minimal()
 ```
   
   + If we add `+` `scale_x_log10()` to our plot, we see that our price variable is *Log Normally Distributed*.
@@ -183,7 +190,8 @@ wine_df %>%
 wine_df %>% 
   ggplot(aes(x = price)) + 
     geom_histogram(bins = 30) + 
-    scale_x_log10()
+    scale_x_log10() +
+    theme_minimal() 
 ```
 
 
@@ -195,7 +203,8 @@ wine_df %>%
   group_by(year) %>% 
   summarise(count = n()) %>% 
   ggplot(aes(x = year, y = count))+ 
-    geom_col()
+    geom_col() +
+    theme_minimal()
 ```
 
 
@@ -241,8 +250,35 @@ lm_mod <- wine_df %>%
 ```
 
 
+## Model Evaluation
+
+In this case, we want to build a model that explains the relationship for wine ratings... to do that we will need to know how to evaluate our model.  There are a bunch of different ways for model evalution, some are for model specific performance and others relate more the the model inner workings.  We are using *Ordinary Least Squares* model, so we can use some stock-standard metrics that are good for linear models(some of these are good for non-linear models).  For this exercise, we will be using the `broom` package and its three commands `glance()`, `tidy()`, & `augment()`.
+
 + evaluate our model
-  + using our model object `lm_mod` 
+  + adjusted r-square: is great for looking at how well a model explains the variance of our dependent variable.  It is on a  scale from 0-1(higher is better).  We will use `glance()` function to extract the adjusted r-square.
+    + In our case, our model explains 42% of our variance.  Not the best in the model in the world ...
+
+```{r}
+lm_mod %>% 
+  glance() %>% 
+  select(adj.r.squared)
+```
+
++ anova: running an anova test will let us see what each of out variables contribute to the r-squared value.  To get the r-square y variable we take the sum of squared error by variable divided by the total of the square error(code `mutate(contribution = sumsq /sum(sumsq))`).  
+  + `price`: contributes most of the variance explanation at 37%
+  + `taster_name`: contributes only 3.4%
+  + `year`: contributes only .68%
+  + While `price` works great we might need some better features. 
+
+```{r}
+lm_mod %>% 
+  anova() %>% 
+  tidy() %>% 
+  mutate(contribution = sumsq /sum(sumsq))%>% 
+  kableExtra::kable()
+```
+
++ variable significance: We can also check for individual variable importance each of our features... Notice, the only non-significant term is `taster_name:Michael Schachner`.	 
 
 ```{r}
 # check model coefs contribution of variance explanation
@@ -250,11 +286,13 @@ lm_mod %>%
   tidy() %>% 
   mutate(significane = case_when(p.value < .05 ~ "***",
                                  p.value < .1 ~ "*",
-                                 TRUE ~ " ")) #%>% 
-  # select(-std.error, -statistic) %>% 
+                                 TRUE ~ " ")) %>% 
+  kableExtra::kable() 
   
 ```
-
+  
+  
+ 
 
 
 ```{r model-check}
@@ -266,19 +304,36 @@ lm_mod %>%
   ggplot() + 
     geom_point(aes(x = term, y = estimate)) + 
     geom_errorbar(aes(x = term, ymin = conf.low, ymax = conf.high)) + 
-    coord_flip()
+    theme_minimal() + 
+    coord_flip() + 
+    labs(
+      title = "Coefficient Plot",
+      subtitle = "Each time price doubles the rating of the wine increases by 2 points",
+      x = "",
+      y = "Variable estimate"
+    )
+```
 
-
-  
+ + plot predicted vs. actual: This is another one of my favorite plots to quickly check how a model is doing.  We are going to use the `augment()` function to add our predicted values to our data set.  
+  + A perfect model would line up exactly on a diagnal line, so our model is far from perfect.
+ 
+ 
+```{r}
 # check predictions
 lm_mod %>% 
   augment() %>% 
   ggplot() + 
     geom_point(aes(y = points, x = .fitted), alpha = .1) + 
-    geom_abline(color = "red")
+    geom_abline(color = "red") + 
+    theme_minimal() + 
+    labs(
+      title = "Actuals vs Predicted",
+      y = "Actuals",
+      x = "Predicted"
+    )
 ```
-
-
+ 
+ 
 # Text mining
 
 + tidy text data
@@ -308,6 +363,7 @@ wine_words_df %>%
   mutate(word = fct_reorder(word, n)) %>%
   ggplot(aes(word, n)) +
   geom_col() +
+  theme_minimal() + 
   coord_flip()
 ```
 
@@ -369,6 +425,7 @@ glmnet_mod$glmnet.fit %>%
   geom_line() +
   scale_x_log10() +
   geom_hline(lty = 2, yintercept = 0) + 
+  theme_minimal() + 
   labs(
     title = "Lambda's impact on Coefficients"
   )
@@ -379,7 +436,8 @@ glmnet_mod$glmnet.fit %>%
   count(lambda) %>%
   ggplot(aes(lambda, n)) +
   geom_line() +
-  scale_x_log10() + 
+  scale_x_log10() +
+  theme_minimal() + 
   labs(
     title = "As Lambda Increases(Our Penalty) the Number of our Terms Decreases",
     y = "Number of Terms",
@@ -415,6 +473,7 @@ lexicon_df %>%
   ggplot(aes(word, coefficient, fill = direction)) +
   geom_col() +
   coord_flip() +
+  theme_minimal() + 
   labs(x = "",
        y = "Estimated effect of the word on the score",
        title = "What words are predictive of a wine's score?")
@@ -432,6 +491,7 @@ wine_words_df %>%
   geom_col(show.legend = FALSE) +
   coord_flip() +
   facet_wrap(~ wine, scales = "free_y") +
+  theme_minimal() + 
   labs(title = "How a lasso regression would predict each wine's score",
        subtitle = "Using a lasso regression with an extra term for price",
        x = "",
