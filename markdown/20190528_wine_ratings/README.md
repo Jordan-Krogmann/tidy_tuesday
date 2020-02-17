@@ -6,6 +6,13 @@ to understand it. All of the code & data is open source, but I hope you
 can take the themes or examples out of this and use it within the
 business.
 
+## Table of Contents
+
+  - [Set Up](#set-up)
+      - [Packages for Part One](#packages-for-part-one)
+      - [Packages for Part Two](#packages-for-part-two)
+  - [Engagements VOC](#engagements-voc)
+
 ![](./imgs/sponge-bob.jpg)
 
 # Set Up
@@ -43,7 +50,7 @@ library(doParallel)# parallel processing
 ## Data Pull
 
 We are going to pull in a data set from a repository on `Github` using
-`readr`’s function `read_csv`.
+`readr`’s function `read_csv()`.
 
 ``` r
 wine_ratings <- read_csv(
@@ -71,6 +78,10 @@ wine_ratings <- read_csv(
     ##   winery = col_character()
     ## )
 
+**Note**: Importing with `read_csv()` comes with a message(you’ll see
+this alot) and it basically is telling us that it pulled in our data set
+and what our function interpreted the data types as.
+
 ## Data Cleaning
 
   - See in the data imported correctly and/or see some of the top rows
@@ -78,7 +89,7 @@ wine_ratings <- read_csv(
 <!-- end list -->
 
 ``` r
-head(wine_ratings) # check top 5 observations
+head(wine_ratings) # check top 6 observations
 ```
 
     ## # A tibble: 6 x 14
@@ -94,7 +105,7 @@ head(wine_ratings) # check top 5 observations
     ## #   taster_twitter_handle <chr>, title <chr>, variety <chr>, winery <chr>
 
 ``` r
-tail(wine_ratings) # check bottom 5 observations
+tail(wine_ratings) # check bottom 6 observations
 ```
 
     ## # A tibble: 6 x 14
@@ -1321,6 +1332,12 @@ year
 
 </table>
 
+  - One of my favorite plots is the coefficient plot, it is a nice way
+    to see the influence of each one of our model’s inputs on the
+    prediction(wine-rating).
+
+<!-- end list -->
+
 ``` r
 # check coeff
 lm_mod %>% 
@@ -1369,11 +1386,35 @@ lm_mod %>%
 
 # Text mining
 
+One column that we haven’t really interacted with is the `description`
+column. It is a free text column that describes the wine from the wine
+reviewer’s perspective. How can we use the words within that description
+to help our prediction?
+
+**Goal**: Use the description column as an input for our model. We are
+going to be using a few different packages to accomplish our above
+goal(`tidytext` for breaking down our description column, `glmnet` for
+penalized regression,`Matrix` because `glmnet` requires a sparse matrix
+as an input & `doparallel` for parallel processing).
+
   - tidy text data
   - most used words
   - which words are good
   - put into matrix form for modeling with glmnet
   - …
+
+**Tidy Text a code break-down**: The tidytext package is amazing if you
+are going to be doing anything from text mining & sentiment scoring to
+topic modeling.
+
+  - tidy text data
+      - we are going to create and object `wine_words_df` and assign
+        `<-` our dataframe `wine_df` and **then** `%>%`
+      - unnest our description column(1-row per word) `unnest_tokens()`
+        and **then** `%>%`
+      - we want to remove all stop words(is, the, a…) with `anti_join()`
+        and **then** `%>%`
+      - remove some additional words with `filter()`
 
 <!-- end list -->
 
@@ -1382,14 +1423,14 @@ lm_mod %>%
 wine_words_df <- wine_df %>%
   unnest_tokens(word, description) %>%
   anti_join(stop_words, by = "word") %>%
-  filter(!word %in% c("wine", "drink"),
+  filter(!word %in% c("wine", "drink", "tannins"),
          str_detect(word, "[a-z]"))
 
 # check df 
 wine_words_df
 ```
 
-    ## # A tibble: 2,506,319 x 15
+    ## # A tibble: 2,478,789 x 15
     ##    country designation points price province region_1 region_2 taster_name
     ##    <chr>   <chr>        <dbl> <dbl> <chr>    <chr>    <chr>    <chr>      
     ##  1 Portug~ Avidagos        87    15 Douro    <NA>     <NA>     Roger Voss 
@@ -1402,11 +1443,16 @@ wine_words_df
     ##  8 Portug~ Avidagos        87    15 Douro    <NA>     <NA>     Roger Voss 
     ##  9 Portug~ Avidagos        87    15 Douro    <NA>     <NA>     Roger Voss 
     ## 10 Portug~ Avidagos        87    15 Douro    <NA>     <NA>     Roger Voss 
-    ## # ... with 2,506,309 more rows, and 7 more variables:
+    ## # ... with 2,478,779 more rows, and 7 more variables:
     ## #   taster_twitter_handle <chr>, title <chr>, year <int>, variety <chr>,
     ## #   winery <chr>, wine_id <int>, word <chr>
 
-check top words
+  - most used words
+      - We are going to check the most frequent words. The cool thing to
+        look at from the plot is the number of descriptors for tast
+        being used.
+
+<!-- end list -->
 
 ``` r
 wine_words_df %>%
@@ -1416,7 +1462,12 @@ wine_words_df %>%
   ggplot(aes(word, n)) +
   geom_col() +
   theme_minimal() + 
-  coord_flip()
+  coord_flip() + 
+  labs(
+    title = "Frequency of words across wine reviews",
+    x =  "",
+    y = "Count of Word"
+  )
 ```
 
 <img src="README_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
