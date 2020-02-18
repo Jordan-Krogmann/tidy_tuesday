@@ -11,7 +11,15 @@ business.
   - [Set Up](#set-up)
       - [Packages for Part One](#packages-for-part-one)
       - [Packages for Part Two](#packages-for-part-two)
-  - [Engagements VOC](#engagements-voc)
+  - [Part One](#part-one)
+      - [Data Pull](#data-pull)
+      - [Data Cleaning](#data-cleaning)
+      - [Exploratory Data Analysis](#exploratory-data-analysis)
+  - [Part Two](#part-one)
+      - [Model Building](#model-building)
+      - [Model Evaluation](#model-evaluation)
+      - [Text Mining](#text-mining)
+      - [GLMNET: How it works](#glmnet:#how-it-works)
 
 ![](./imgs/sponge-bob.jpg)
 
@@ -237,7 +245,7 @@ wine_df <- wine_ratings %>%
 
 Boom… data cleaning… pretty much done… almost
 
-# Exploratory Data Analysis
+## Exploratory Data Analysis
 
 One of `tidyverse`’s/`R`’s best feature is the `ggplot2` package, which
 stands for the grammar of graphics …2(the prophet Hadley retire the
@@ -348,7 +356,9 @@ wine_df %>%
 
 <img src="README_files/figure-gfm/unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
 
-# Model Building
+# Part Two
+
+## Model Building
 
 We have looked at a few variables(even though you should explore
 more\!), but we only have a loose understanding in a uni-variate or
@@ -1384,7 +1394,7 @@ lm_mod %>%
 
 <img src="README_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
 
-# Text mining
+## Text mining
 
 One column that we haven’t really interacted with is the `description`
 column. It is a free text column that describes the wine from the wine
@@ -1399,8 +1409,7 @@ as an input & `doparallel` for parallel processing).
 
   - tidy text data
   - most used words
-  - which words are good
-  - put into matrix form for modeling with glmnet
+  - pre-process data for `glmnet`
   - …
 
 **Tidy Text a code break-down**: The tidytext package is amazing if you
@@ -1472,6 +1481,10 @@ wine_words_df %>%
 
 <img src="README_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
 
+  - pre-process data for `glmnet`
+
+<!-- end list -->
+
 ``` r
 wine_words_filtered_df <- wine_words_df %>%
   distinct(wine_id, word) %>%
@@ -1479,19 +1492,13 @@ wine_words_filtered_df <- wine_words_df %>%
   filter(n >= 1000)
 ```
 
-## which words are good?
-
-  - enter the glmnet
-
-<!-- end list -->
-
 ``` r
 # matrix package
 # put into matrix
 wine_word_matrix <- wine_words_filtered_df %>%
   cast_sparse(wine_id, word)
 
-# 
+# add wine ids
 wine_ids <- as.integer(rownames(wine_word_matrix))
 
 # dependent variable
