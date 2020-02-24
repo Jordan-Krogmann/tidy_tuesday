@@ -220,7 +220,7 @@ wine_df %>%
 wine_df %>% 
   group_by(year) %>% 
   summarise(count = n()) %>% 
-  ggplot(aes(x = year, y = count))+ 
+  ggplot(aes(x = year, y = count)) + 
     geom_col() +
     theme_minimal()
 ```
@@ -517,7 +517,7 @@ lexicon_df %>%
 
 ```{r}
 wine_words_df %>%
-  filter(wine_id %in% sample(unique(wine_id), 4)) %>%
+  filter(wine_id %in% sample(unique(wine_id), 2)) %>%
   distinct(word, title, points) %>%
   mutate(wine = paste0(str_trunc(title, 40), " (", points, ")")) %>%
   inner_join(lexicon_df, by = "word") %>%
