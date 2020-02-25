@@ -176,13 +176,13 @@ We will want to start making some plots to start understanding our data. One of 
 
 ```{r}
 # check the distribution of points
-wine_df %>%
-    ggplot(aes(x = points)) + 
+# wine_df %>%
+    ggplot(data = wine_df, mapping = aes(x = points)) + 
     geom_histogram( binwidth = 1) + 
     theme_minimal() + 
     labs(
       title = "Wine Ratings(Points) are normally Distributed",
-      subtitle = "",
+      subtitle = "THis is awesome",
       caption = "*Having a normal distribution for our target variable is good for a linear model",
       y = "Count",
       x = "Wine Rating"
@@ -220,8 +220,9 @@ wine_df %>%
 wine_df %>% 
   group_by(year) %>% 
   summarise(count = n()) %>% 
-  ggplot(aes(x = year, y = count)) + 
-    geom_col() +
+  ggplot(aes(x = year, y = count, fill = year)) + 
+    geom_col(color = "black") +
+    scale_y_continuous(breaks = seq(0,16000, by = 2500)) + 
     theme_minimal()
 ```
 
@@ -262,11 +263,13 @@ We have looked at a few variables(even though you should explore more!), but we 
 # train model
 lm_mod <- wine_df %>% 
   mutate(
-    country = fct_lump(country, n = 5),
-    taster_name = fct_lump(taster_name, n = 5)
+    country = fct_lump(country, n = 8),
+    taster_name = fct_lump(taster_name, n = 10)
   ) %>% 
   lm(points ~ log2(price) + country + taster_name + year, data = .) 
 ```
+
+
 
 
 ## Model Evaluation
@@ -276,6 +279,7 @@ In this case, we want to build a model that explains the relationship for wine r
 + evaluate our model
   + adjusted r-square: is great for looking at how well a model explains the variance of our dependent variable.  It is on a  scale from 0-1(higher is better).  We will use `glance()` function to extract the adjusted r-square.
     + In our case, our model explains 42% of our variance.  Not the best in the model in the world ...
+
 
 ```{r}
 lm_mod %>% 
