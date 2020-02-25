@@ -19,7 +19,8 @@ business.
       - [Model Building](#model-building)
       - [Model Evaluation](#model-evaluation)
       - [Text Mining](#text-mining)
-      - [GLMNET: How it works](#glmnet:#how-it-works)
+          - [GLMNET: How it works](#glmnet:#how-it-works)
+          - [Creating a Lexicon](#creating-a-lexicon)
 
 ![](./imgs/sponge-bob.jpg)
 
@@ -349,7 +350,7 @@ wine_df %>%
 wine_df %>% 
   group_by(year) %>% 
   summarise(count = n()) %>% 
-  ggplot(aes(x = year, y = count))+ 
+  ggplot(aes(x = year, y = count)) + 
     geom_col() +
     theme_minimal()
 ```
@@ -1409,8 +1410,7 @@ as an input & `doparallel` for parallel processing).
 
   - tidy text data
   - most used words
-  - pre-process data for `glmnet`
-  - …
+  - pre-process data for penalized regression
 
 **Tidy Text a code break-down**: The tidytext package is amazing if you
 are going to be doing anything from text mining & sentiment scoring to
@@ -1459,7 +1459,9 @@ wine_words_df
   - most used words
       - We are going to check the most frequent words. The cool thing to
         look at from the plot is the number of descriptors for tast
-        being used.
+        being used. Although, this is cool to look at, how can we tell
+        what the how negative or positive our words are on our
+        prediction?
 
 <!-- end list -->
 
@@ -1481,7 +1483,14 @@ wine_words_df %>%
 
 <img src="README_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
 
-  - pre-process data for `glmnet`
+  - pre-process data for penalized regression
+      - **Penalized Regression**: Penalized regression(Lasso, Ridge, &
+        Elastic Net… google at your pleasure), method keeps variables,
+        but contrains them to zero by some penalty(lambda or \(\lambda\)
+        if you’re greek).
+      - This should be seen as another tool in the tool kit and has a
+        bunch of great uses. We are going to want to one of the most
+        popular implementations for penalized re
 
 <!-- end list -->
 
@@ -1526,7 +1535,7 @@ glmnet_mod <- cv.glmnet(
 )
 ```
 
-## check glmnet
+### GLMNET: How it works
 
 ``` r
 # you can see the impact of lambda on terms coefficients
@@ -1570,7 +1579,7 @@ plot(glmnet_mod)
 
 <img src="README_files/figure-gfm/unnamed-chunk-11-3.png" style="display: block; margin: auto;" />
 
-## Creating our own lexicon
+### Creating a Lexicon
 
 ``` r
 lexicon_df <- glmnet_mod$glmnet.fit %>%
@@ -1601,7 +1610,7 @@ lexicon_df %>%
 
 ``` r
 wine_words_df %>%
-  filter(wine_id %in% sample(unique(wine_id), 4)) %>%
+  filter(wine_id %in% sample(unique(wine_id), 2)) %>%
   distinct(word, title, points) %>%
   mutate(wine = paste0(str_trunc(title, 40), " (", points, ")")) %>%
   inner_join(lexicon_df, by = "word") %>%
